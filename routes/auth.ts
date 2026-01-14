@@ -11,6 +11,11 @@ const loginschema = z.object({
     password:z.string().min(6)
 })
 
+const signupschema = z.object({
+    name:z.string().min(3),
+    email:z.string().email(),
+    password:z.string().min(6)
+})
 router.post('/login',async(req,res,next)=>{
     const{email,password} = loginschema.parse(req.body)
     const check = await prisma.user.findUnique({
@@ -38,5 +43,28 @@ router.post('/login',async(req,res,next)=>{
     }
 })
 
+router.post('/register',async(req,res,next)=>{
+    const{name,email,password} = signupschema.parse(req.body);
+    const check = await prisma.user.findUnique({
+        where:{
+            email:email
+        }
+    })
+    if(check){
+        return res.status(401).json("User Already Exists");
+    }
+    else{
+        const hashed = await bcrypt.hash(password,10);
+        const newuser = await prisma.user.create({
+            data:{
+                name:name,
+                email:email,
+                password:hashed
+            }
+        })
+        console.log(newuser);
+        return res.status(200).json("User is Sucessfully Created")
+    }
+})
 
 export default router
